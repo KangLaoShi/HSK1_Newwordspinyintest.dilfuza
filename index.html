@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HSK1 Yangi so'zlar(pinyin)</title>
+    <!-- 引入 React 和 ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- 引入 Babel 用于解析 JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* 简单的动画样式 */
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+            animation: fade-in-up 0.5s ease-out forwards;
+        }
+        /* 防止点击高亮 */
+        button {
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-sky-50">
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- 图标组件 (替代 lucide-react 库，确保单文件运行) ---
+        const Timer = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg>
+        );
+        const Medal = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+        );
+        const RefreshCw = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+        );
+        const CheckCircle = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        );
+        const XCircle = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/></svg>
+        );
+        const Languages = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+        );
+        const Volume2 = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        );
+
+        // --- Сүзлек базасы (Словарь) ---
+        const vocabDatabase = [
+            // 代词和疑问词 (Алмашлыклар һәм сораулар / Местоимения и вопросы)
+            { hanzi: "我", pinyin: "wǒ", correct: "men / я", category: "pronoun" },
+            { hanzi: "我们", pinyin: "wǒmen", correct: "biz / мы", category: "pronoun" },
+            { hanzi: "你", pinyin: "nǐ", correct: "sen / ты", category: "pronoun" },
+            { hanzi: "你们", pinyin: "nǐmen", correct: "sizlar / вы", category: "pronoun" },
+            { hanzi: "他", pinyin: "tā", correct: "u (erkak) / он", category: "pronoun" },
+            { hanzi: "她", pinyin: "tā", correct: "u (ayol) / она", category: "pronoun" },
+            { hanzi: "他们", pinyin: "tāmen", correct: "ular (erkak/aralash) / они", category: "pronoun" },
+            { hanzi: "她们", pinyin: "tāmen", correct: "ular (ayol) / они (ж)", category: "pronoun" },
+            { hanzi: "这", pinyin: "zhè", correct: "bu / это", category: "pronoun" },
+            { hanzi: "那", pinyin: "nà", correct: "ana u / то", category: "pronoun" },
+            { hanzi: "哪", pinyin: "nǎ", correct: "qaysi / какой", category: "question" },
+            { hanzi: "谁", pinyin: "shéi", correct: "kim / кто", category: "question" },
+            { hanzi: "什么", pinyin: "shénme", correct: "nima / что", category: "question" },
+            { hanzi: "多少", pinyin: "duōshao", correct: "qancha / сколько", category: "question" },
+            { hanzi: "几", pinyin: "jǐ", correct: "nechta / сколько (до 10)", category: "question" },
+            { hanzi: "怎么", pinyin: "zěnme", correct: "qanday qilib / как", category: "question" },
+            { hanzi: "怎么样", pinyin: "zěnmeyàng", correct: "qanday / какой", category: "question" },
+
+            // 数字 (Саннар / Числа)
+            { hanzi: "一", pinyin: "yī", correct: "bir / один", category: "number" },
+            { hanzi: "二", pinyin: "èr", correct: "ikki / два", category: "number" },
+            { hanzi: "三", pinyin: "sān", correct: "uch / три", category: "number" },
+            { hanzi: "四", pinyin: "sì", correct: "to‘rt / четыре", category: "number" },
+            { hanzi: "五", pinyin: "wǔ", correct: "besh / пять", category: "number" },
+            { hanzi: "六", pinyin: "liù", correct: "olti / шесть", category: "number" },
+            { hanzi: "七", pinyin: "qī", correct: "yetti / семь", category: "number" },
+            { hanzi: "八", pinyin: "bā", correct: "sakkiz / восемь", category: "number" },
+            { hanzi: "九", pinyin: "jiǔ", correct: "to‘qqiz / девять", category: "number" },
+            { hanzi: "十", pinyin: "shí", correct: "o‘n / десять", category: "number" },
+            { hanzi: "零", pinyin: "líng", correct: "nol / ноль", category: "number" },
+
+            // 语法与量词 (Грамматика / Грамматика)
+            { hanzi: "个", pinyin: "gè", correct: "dona / счётное слово", category: "grammar" },
+            { hanzi: "岁", pinyin: "suì", correct: "yosh / лет (возраст)", category: "grammar" },
+            { hanzi: "本", pinyin: "běn", correct: "dona (kitob) / для книг", category: "grammar" },
+            { hanzi: "些", pinyin: "xiē", correct: "bir nechta / несколько", category: "grammar" },
+            { hanzi: "块", pinyin: "kuài", correct: "yuan (dona) / юань", category: "grammar" },
+            { hanzi: "不", pinyin: "bù", correct: "emas (yo‘q) / не", category: "grammar" },
+            { hanzi: "没", pinyin: "méi", correct: "yo‘q (o‘tgan) / нет", category: "grammar" },
+            { hanzi: "很", pinyin: "hěn", correct: "juda / очень", category: "grammar" },
+            { hanzi: "太", pinyin: "tài", correct: "juda / слишком", category: "grammar" },
+            { hanzi: "都", pinyin: "dōu", correct: "hammasi / все", category: "grammar" },
+            { hanzi: "和", pinyin: "hé", correct: "va / и", category: "grammar" },
+            { hanzi: "在", pinyin: "zài", correct: "da (joy) / в (находиться)", category: "grammar" },
+            { hanzi: "的", pinyin: "de", correct: "-ning / притяж. частица", category: "grammar" },
+            { hanzi: "了", pinyin: "le", correct: "(o‘tganlik) / частица прош. вр.", category: "grammar" },
+            { hanzi: "吗", pinyin: "ma", correct: "-mi / вопр. частица", category: "grammar" },
+            { hanzi: "呢", pinyin: "ne", correct: "-chi / частица", category: "grammar" },
+
+            // 问候语 (Сәламләү / Приветствия)
+            { hanzi: "喂", pinyin: "wèi", correct: "allo / алло", category: "greeting" },
+            { hanzi: "谢谢", pinyin: "xièxie", correct: "rahmat / спасибо", category: "greeting" },
+            { hanzi: "不客气", pinyin: "búkèqì", correct: "arzimaydi / пожалуйста", category: "greeting" },
+            { hanzi: "再见", pinyin: "zàijiàn", correct: "xayr / до свидания", category: "greeting" },
+            { hanzi: "请", pinyin: "qǐng", correct: "marhamat / пожалуйста", category: "greeting" },
+            { hanzi: "对不起", pinyin: "duìbuqǐ", correct: "kechirasiz / извините", category: "greeting" },
+            { hanzi: "没关系", pinyin: "méiguānxì", correct: "hechqisi yo‘q / ничего", category: "greeting" },
+
+            // 地点与方向 (Урыннар һәм юнәлешләр / Места и направления)
+            { hanzi: "家", pinyin: "jiā", correct: "uy / дом", category: "place" },
+            { hanzi: "学校", pinyin: "xuéxiào", correct: "maktab / школа", category: "place" },
+            { hanzi: "饭店", pinyin: "fàndiàn", correct: "restoran / ресторан", category: "place" },
+            { hanzi: "商店", pinyin: "shāngdiàn", correct: "do‘kon / магазин", category: "place" },
+            { hanzi: "医院", pinyin: "yīyuàn", correct: "kasalxona / больница", category: "place" },
+            { hanzi: "火车站", pinyin: "huǒchēzhàn", correct: "vokzal / вокзал", category: "place" },
+            { hanzi: "中国", pinyin: "Zhōngguó", correct: "Xitoy / Китай", category: "place" },
+            { hanzi: "北京", pinyin: "Běijīng", correct: "Pekin / Пекин", category: "place" },
+            { hanzi: "上", pinyin: "shàng", correct: "yuqori / вверх (на)", category: "direction" },
+            { hanzi: "下", pinyin: "xià", correct: "past / вниз", category: "direction" },
+            { hanzi: "前面", pinyin: "qiánmiàn", correct: "old tomonda / впереди", category: "direction" },
+            { hanzi: "后面", pinyin: "hòumiàn", correct: "orqada / сзади", category: "direction" },
+            { hanzi: "里", pinyin: "lǐ", correct: "ichida / внутри", category: "direction" },
+
+            // 时间 (Вакыт / Время)
+            { hanzi: "今天", pinyin: "jīntiān", correct: "bugun / сегодня", category: "time" },
+            { hanzi: "明天", pinyin: "míngtiān", correct: "ertaga / завтра", category: "time" },
+            { hanzi: "昨天", pinyin: "zuótiān", correct: "kecha / вчера", category: "time" },
+            { hanzi: "上午", pinyin: "shàngwǔ", correct: "ertalab / утро", category: "time" },
+            { hanzi: "中午", pinyin: "zhōngwǔ", correct: "tush payti / полдень", category: "time" },
+            { hanzi: "下午", pinyin: "xiàwǔ", correct: "tushdan keyin / день", category: "time" },
+            { hanzi: "年", pinyin: "nián", correct: "yil / год", category: "time" },
+            { hanzi: "月", pinyin: "yuè", correct: "oy / месяц", category: "time" },
+            { hanzi: "日", pinyin: "rì", correct: "kun / день", category: "time" },
+            { hanzi: "星期", pinyin: "xīngqī", correct: "hafta / неделя", category: "time" },
+            { hanzi: "点", pinyin: "diǎn", correct: "soat / час", category: "time" },
+            { hanzi: "分钟", pinyin: "fēnzhōng", correct: "daqiqa / минута", category: "time" },
+            { hanzi: "现在", pinyin: "xiànzài", correct: "hozir / сейчас", category: "time" },
+            { hanzi: "时候", pinyin: "shíhou", correct: "vaqt / время", category: "time" },
+
+            // 人物与家庭 (Кешеләр һәм гаилә / Люди и семья)
+            { hanzi: "爸爸", pinyin: "bàba", correct: "ota / папа", category: "family" },
+            { hanzi: "妈妈", pinyin: "māma", correct: "ona / мама", category: "family" },
+            { hanzi: "儿子", pinyin: "érzi", correct: "o‘g‘il / сын", category: "family" },
+            { hanzi: "女儿", pinyin: "nǚ’ér", correct: "qiz / дочь", category: "family" },
+            { hanzi: "老师", pinyin: "lǎoshī", correct: "o‘qituvchi / учитель", category: "family" },
+            { hanzi: "学生", pinyin: "xuéshēng", correct: "talaba / студент", category: "family" },
+            { hanzi: "同学", pinyin: "tóngxué", correct: "sinfdosh / одноклассник", category: "family" },
+            { hanzi: "朋友", pinyin: "péngyou", correct: "do‘st / друг", category: "family" },
+            { hanzi: "医生", pinyin: "yīshēng", correct: "shifokor / врач", category: "family" },
+            { hanzi: "先生", pinyin: "xiānsheng", correct: "janob / господин", category: "family" },
+            { hanzi: "小姐", pinyin: "xiǎojiě", correct: "xonim / госпожа", category: "family" },
+
+            // 名词 (Исемнәр / Существительные)
+            { hanzi: "衣服", pinyin: "yīfu", correct: "kiyim / одежда", category: "noun" },
+            { hanzi: "水", pinyin: "shuǐ", correct: "suv / вода", category: "noun" },
+            { hanzi: "菜", pinyin: "cài", correct: "taom (sabzavot) / блюдо (овощи)", category: "noun" },
+            { hanzi: "米饭", pinyin: "mǐfàn", correct: "guruch / рис", category: "noun" },
+            { hanzi: "水果", pinyin: "shuǐguǒ", correct: "meva / фрукты", category: "noun" },
+            { hanzi: "苹果", pinyin: "píngguǒ", correct: "olma / яблоко", category: "noun" },
+            { hanzi: "茶", pinyin: "chá", correct: "choy / чай", category: "noun" },
+            { hanzi: "杯子", pinyin: "bēizi", correct: "piyola / чашка", category: "noun" },
+            { hanzi: "钱", pinyin: "qián", correct: "pul / деньги", category: "noun" },
+            { hanzi: "飞机", pinyin: "fēijī", correct: "samolyot / самолёт", category: "noun" },
+            { hanzi: "出租车", pinyin: "chūzūchē", correct: "taksi / такси", category: "noun" },
+            { hanzi: "电视", pinyin: "diànshì", correct: "televizor / телевизор", category: "noun" },
+            { hanzi: "电脑", pinyin: "diànnǎo", correct: "kompyuter / компьютер", category: "noun" },
+            { hanzi: "电影", pinyin: "diànyǐng", correct: "kino / фильм", category: "noun" },
+            { hanzi: "天气", pinyin: "tiānqì", correct: "ob-havo / погода", category: "noun" },
+            { hanzi: "猫", pinyin: "māo", correct: "mushuk / кошка", category: "noun" },
+            { hanzi: "狗", pinyin: "gǒu", correct: "it / собака", category: "noun" },
+            { hanzi: "东西", pinyin: "dōngxi", correct: "narsa / вещь", category: "noun" },
+            { hanzi: "人", pinyin: "rén", correct: "odam / человек", category: "noun" },
+            { hanzi: "名字", pinyin: "míngzi", correct: "ism / имя", category: "noun" },
+            { hanzi: "书", pinyin: "shū", correct: "kitob / книга", category: "noun" },
+            { hanzi: "汉语", pinyin: "Hànyǔ", correct: "xitoy tili / кит. язык", category: "noun" },
+            { hanzi: "字", pinyin: "zì", correct: "belgi (harf) / иероглиф", category: "noun" },
+            { hanzi: "桌子", pinyin: "zhuōzi", correct: "stol / стол", category: "noun" },
+            { hanzi: "椅子", pinyin: "yǐzi", correct: "stul / стул", category: "noun" },
+
+            // 动词 (Фигыльләр / Глаголы)
+            { hanzi: "是", pinyin: "shì", correct: "bo‘lmoq / быть", category: "verb" },
+            { hanzi: "有", pinyin: "yǒu", correct: "bor / иметь", category: "verb" },
+            { hanzi: "看", pinyin: "kàn", correct: "ko‘rmoq / смотреть", category: "verb" },
+            { hanzi: "听", pinyin: "tīng", correct: "eshitmoq / слушать", category: "verb" },
+            { hanzi: "说话", pinyin: "shuōhuà", correct: "gapirmoq / говорить", category: "verb" },
+            { hanzi: "读", pinyin: "dú", correct: "o‘qimoq / читать", category: "verb" },
+            { hanzi: "写", pinyin: "xiě", correct: "yozmoq / писать", category: "verb" },
+            { hanzi: "看见", pinyin: "kànjiàn", correct: "ko‘rib qolmoq / увидеть", category: "verb" },
+            { hanzi: "叫", pinyin: "jiào", correct: "chaqirmoq / звать", category: "verb" },
+            { hanzi: "来", pinyin: "lái", correct: "kelmoq / приходить", category: "verb" },
+            { hanzi: "回", pinyin: "huí", correct: "qaytmoq / возвращаться", category: "verb" },
+            { hanzi: "去", pinyin: "qù", correct: "bormoq / идти", category: "verb" },
+            { hanzi: "吃", pinyin: "chī", correct: "yemoq / есть", category: "verb" },
+            { hanzi: "喝", pinyin: "hē", correct: "ichmoq / пить", category: "verb" },
+            { hanzi: "睡觉", pinyin: "shuìjiào", correct: "uxlamoq / спать", category: "verb" },
+            { hanzi: "打电话", pinyin: "dǎ diànhuà", correct: "qo‘ng‘iroq qilmoq / звонить", category: "verb" },
+            { hanzi: "做", pinyin: "zuò", correct: "qilmoq / делать", category: "verb" },
+            { hanzi: "买", pinyin: "mǎi", correct: "sotib olmoq / покупать", category: "verb" },
+            { hanzi: "学习", pinyin: "xuéxí", correct: "o‘rganmoq / учиться", category: "verb" },
+            { hanzi: "开", pinyin: "kāi", correct: "ochmoq (haydamoq) / открывать", category: "verb" },
+            { hanzi: "坐", pinyin: "zuò", correct: "o‘tirmoq / сидеть", category: "verb" },
+            { hanzi: "住", pinyin: "zhù", correct: "yashamoq / жить", category: "verb" },
+            { hanzi: "工作", pinyin: "gōngzuò", correct: "ishlamoq / работать", category: "verb" },
+            { hanzi: "下雨", pinyin: "xiàyǔ", correct: "yomg‘ir yog‘moq / идёт дождь", category: "verb" },
+            { hanzi: "爱", pinyin: "ài", correct: "sevmoq / любить", category: "verb" },
+            { hanzi: "喜欢", pinyin: "xǐhuan", correct: "yoqtirmoq / нравиться", category: "verb" },
+            { hanzi: "想", pinyin: "xiǎng", correct: "xohlamoq / хотеть (думать)", category: "verb" },
+            { hanzi: "认识", pinyin: "rènshi", correct: "tanishmoq / быть знакомым", category: "verb" },
+            { hanzi: "会", pinyin: "huì", correct: "qila olmoq / уметь", category: "verb" },
+            { hanzi: "能", pinyin: "néng", correct: "mumkin / мочь", category: "verb" },
+
+            // 形容词 (Сыйфатлар / Прилагательные)
+            { hanzi: "好", pinyin: "hǎo", correct: "yaxshi / хороший", category: "adj" },
+            { hanzi: "大", pinyin: "dà", correct: "katta / большой", category: "adj" },
+            { hanzi: "小", pinyin: "xiǎo", correct: "kichik / маленький", category: "adj" },
+            { hanzi: "多", pinyin: "duō", correct: "ko‘p / много", category: "adj" },
+            { hanzi: "少", pinyin: "shǎo", correct: "kam / мало", category: "adj" },
+            { hanzi: "冷", pinyin: "lěng", correct: "sovuq / холодный", category: "adj" },
+            { hanzi: "热", pinyin: "rè", correct: "issiq / жаркий", category: "adj" },
+            { hanzi: "高兴", pinyin: "gāoxìng", correct: "xursand / рад", category: "adj" },
+            { hanzi: "漂亮", pinyin: "piàoliang", correct: "chiroyli / красивый", category: "adj" }
+        ];
+
+        // Массивны болгату өчен ярдәмче функция (Вспомогательная функция для перемешивания массива)
+        const shuffleArray = (array) => {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        };
+
+        // 生成题目
+        const generateQuestionSet = (fullData) => {
+            const shuffledData = shuffleArray([...fullData]);
+            
+            return shuffledData.map((item) => {
+                const sameCategoryItems = fullData.filter(d => 
+                    d.category === item.category && 
+                    d.correct !== item.correct
+                );
+
+                let distractors = [];
+
+                if (sameCategoryItems.length >= 3) {
+                    distractors = shuffleArray(sameCategoryItems).slice(0, 3);
+                } else {
+                    distractors = [...sameCategoryItems];
+                    const itemsNeeded = 3 - distractors.length;
+                    
+                    const otherCategoryItems = fullData.filter(d => 
+                        d.category !== item.category && 
+                        d.correct !== item.correct
+                    );
+                    
+                    const fillerItems = shuffleArray(otherCategoryItems).slice(0, itemsNeeded);
+                    distractors = [...distractors, ...fillerItems];
+                }
+
+                distractors = distractors.filter((v, i, a) => a.findIndex(t => t.correct === v.correct) === i);
+                
+                while (distractors.length < 3) {
+                    const randomItem = fullData[Math.floor(Math.random() * fullData.length)];
+                    if (randomItem.correct !== item.correct && !distractors.find(d => d.correct === randomItem.correct)) {
+                        distractors.push(randomItem);
+                    }
+                }
+
+                const options = shuffleArray([item.correct, ...distractors.map(d => d.correct)]);
+                
+                return { ...item, options };
+            });
+        };
+
+        // --- 主 App 组件 ---
+        function App() {
+            const [gameData, setGameData] = useState([]);
+            const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+            const [score, setScore] = useState(0);
+            const [timeLeft, setTimeLeft] = useState(60);
+            const [isGameOver, setIsGameOver] = useState(false);
+            const [selectedOption, setSelectedOption] = useState(null);
+            const [feedback, setFeedback] = useState(null);
+
+            // 语音播放
+            const playAudio = (text) => {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'zh-CN'; // 强制设置为中国大陆普通话
+                    utterance.rate = 0.8; // 稍微放慢语速，适合学习者
+                    
+                    const voices = window.speechSynthesis.getVoices();
+                    // 优先匹配高质量的汉语普通话语音库
+                    const bestVoice = voices.find(v => v.lang === 'zh-CN' && v.name.includes('Xiaoxiao')) || // Edge 高质量中文女声
+                                      voices.find(v => v.lang === 'zh-CN' && v.name.includes('Google')) ||   // Google 中文
+                                      voices.find(v => v.lang === 'zh-CN' && v.name.includes('Microsoft')) ||// Windows 默认中文
+                                      voices.find(v => v.lang === 'zh-CN' && v.name.includes('Huihui')) ||   // 经典中文女声
+                                      voices.find(v => v.lang === 'zh-CN') ||                                // 任何标记为大陆普通话的声音
+                                      voices.find(v => v.lang.startsWith('zh'));                             // 其他中文作为最后保底
+                    
+                    if (bestVoice) {
+                        utterance.voice = bestVoice;
+                    }
+                    window.speechSynthesis.speak(utterance);
+                }
+            };
+
+            useEffect(() => {
+                startNewGame();
+            }, []);
+
+            const startNewGame = () => {
+                const newQuestions = generateQuestionSet(vocabDatabase);
+                setGameData(newQuestions);
+                setCurrentQuestionIndex(0);
+                setScore(0);
+                setTimeLeft(60);
+                setIsGameOver(false);
+                setSelectedOption(null);
+                setFeedback(null);
+            };
+
+            useEffect(() => {
+                if (timeLeft > 0 && !isGameOver) {
+                    const timerId = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+                    return () => clearTimeout(timerId);
+                } else if (timeLeft === 0) {
+                    setIsGameOver(true);
+                }
+            }, [timeLeft, isGameOver]);
+
+            const handleOptionClick = (option) => {
+                if (selectedOption) return;
+
+                setSelectedOption(option);
+                const currentQ = gameData[currentQuestionIndex];
+
+                // 无论选择对错，都播放当前正确汉字的发音
+                playAudio(currentQ.hanzi);
+
+                if (option === currentQ.correct) {
+                    setFeedback('correct');
+                    setScore(score + 10);
+                } else {
+                    setFeedback('incorrect');
+                }
+
+                setTimeout(() => {
+                    if (currentQuestionIndex < gameData.length - 1) {
+                        setCurrentQuestionIndex(currentQuestionIndex + 1);
+                        setSelectedOption(null);
+                        setFeedback(null);
+                    } else {
+                        setIsGameOver(true);
+                    }
+                }, 1200);
+            };
+
+            if (gameData.length === 0) return <div className="p-10 text-center">Loading...</div>;
+
+            const currentQ = gameData[currentQuestionIndex];
+
+            return (
+                <div className="min-h-screen bg-sky-50 font-sans flex flex-col">
+                    {/* Header Bar */}
+                    <div className="bg-sky-500 text-white p-3 md:p-5 shadow-md flex flex-col md:flex-row justify-between items-center z-10 rounded-b-3xl gap-3">
+                        <h1 className="text-2xl md:text-3xl font-extrabold tracking-wide drop-shadow-md">HSK1 Yangi so'zlar(pinyin)</h1>
+                        
+                        <div className="flex items-center gap-3 bg-white/20 px-4 md:px-6 py-2 rounded-full backdrop-blur-sm border border-white/30 shadow-sm">
+                            <Languages className="w-6 h-6 md:w-8 md:h-8 text-yellow-300 drop-shadow-sm" />
+                            <div className="text-base md:text-xl font-bold tracking-wide text-center drop-shadow-sm">
+                                Dilfuza Kāng lǎo shī bilan xitoy tilini o'rganmiz
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex-grow flex items-center justify-center p-4">
+                        {isGameOver ? (
+                            <div className="bg-white p-8 rounded-3xl shadow-xl text-center max-w-md w-full animate-fade-in-up border-4 border-sky-200">
+                                <Medal className="w-20 h-20 text-yellow-400 mx-auto mb-4 drop-shadow-sm" />
+                                <h2 className="text-4xl font-black text-sky-900 mb-2">O'yin tugadi!</h2>
+                                <p className="text-sky-700 mb-6 text-lg">Sizning natijangiz: <span className="font-black text-blue-500 text-3xl ml-2">{score}</span></p>
+                                <div className="text-sm text-sky-500 mb-8 font-medium">Jami savollar: {gameData.length}</div>
+                                <button 
+                                    onClick={startNewGame}
+                                    className="flex items-center justify-center w-full bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-1 text-xl"
+                                >
+                                    <RefreshCw className="w-6 h-6 mr-2" />
+                                    Qayta boshlash
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="w-full max-w-4xl bg-white/80 backdrop-blur-md rounded-[2rem] p-4 md:p-8 flex flex-col md:flex-row gap-6 shadow-xl border-4 border-sky-200">
+                                {/* LEFT PANEL */}
+                                <div className="flex-1 flex flex-col items-center justify-center space-y-6 md:space-y-8 p-4">
+                                    <div className={`flex items-center space-x-2 px-6 py-3 rounded-full text-white font-black text-2xl shadow-lg transition-colors ${timeLeft < 10 ? 'bg-red-500 animate-bounce' : 'bg-green-400'}`}>
+                                        <span className="text-3xl drop-shadow-sm">{timeLeft}</span>
+                                        <Timer className="w-7 h-7" />
+                                    </div>
+
+                                    <div className="text-center w-full">
+                                        <p className="text-sky-600 mb-4 text-xl font-bold">Bu nima?</p>
+                                        
+                                        {/* 点击拼音播放音频 */}
+                                        <div 
+                                            onClick={() => playAudio(currentQ.hanzi)}
+                                            className="relative cursor-pointer group flex flex-col items-center justify-center min-h-[180px] bg-white rounded-3xl border-4 border-yellow-200 p-4 shadow-inner transition-all hover:border-yellow-400 active:scale-95"
+                                            title="Tinglash uchun bosing (点击听发音)"
+                                        >
+                                            {selectedOption && (
+                                                <div className="text-6xl md:text-8xl font-black text-blue-500 drop-shadow-md animate-fade-in-up mb-2">
+                                                    {currentQ.hanzi}
+                                                </div>
+                                            )}
+                                            {/* 将原本的 text-5xl md:text-7xl lg:text-8xl 调小为 text-4xl md:text-5xl lg:text-6xl */}
+                                            {/* 选择后的字号也从 text-3xl md:text-4xl 调小为 text-2xl md:text-3xl */}
+                                            <div className={`font-black text-sky-900 drop-shadow-sm transition-all duration-300 select-none ${selectedOption ? 'text-2xl md:text-3xl opacity-75' : 'text-4xl md:text-5xl lg:text-6xl transform group-hover:scale-110'}`}>
+                                                {currentQ.pinyin}
+                                            </div>
+                                            
+                                            {/* 音频图标提示 */}
+                                            <div className="absolute top-3 right-3 text-yellow-300 group-hover:text-yellow-500 transition-colors">
+                                                <Volume2 className="w-6 h-6 md:w-8 md:h-8 opacity-80" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="w-full max-w-[220px] border-4 border-yellow-300 bg-yellow-50 rounded-2xl p-3 flex items-center justify-between shadow-sm">
+                                        <Medal className="w-8 h-8 text-yellow-500 drop-shadow-sm" />
+                                        <span className="text-3xl font-black text-sky-800">{score}</span>
+                                    </div>
+                                    
+                                    <div className="text-sm font-medium text-sky-600 bg-sky-100 px-4 py-1 rounded-full">
+                                        Savol: {currentQuestionIndex + 1} / {gameData.length}
+                                    </div>
+                                </div>
+
+                                {/* RIGHT PANEL - Options */}
+                                <div className="flex-1 flex flex-col justify-center gap-3 md:gap-4 p-2">
+                                    {currentQ.options.map((option, idx) => {
+                                        let buttonStyle = "bg-white text-sky-700 hover:bg-sky-50 border-b-[6px] border-sky-200 hover:border-sky-300";
+                                        
+                                        if (selectedOption) {
+                                            if (option === currentQ.correct) {
+                                                buttonStyle = "bg-green-100 text-green-700 border-green-400 border-b-[6px]";
+                                            } else if (option === selectedOption && option !== currentQ.correct) {
+                                                buttonStyle = "bg-rose-100 text-rose-500 border-rose-300 border-b-[6px]";
+                                            } else {
+                                                buttonStyle = "bg-slate-50 text-slate-300 border-slate-100 border-b-[6px] opacity-60";
+                                            }
+                                        }
+
+                                        return (
+                                            <button
+                                                key={idx}
+                                                onClick={() => handleOptionClick(option)}
+                                                disabled={selectedOption !== null}
+                                                className={`
+                                                    w-full py-4 md:py-5 px-3 md:px-5 rounded-2xl text-base md:text-lg lg:text-xl font-bold transition-all duration-200 
+                                                    shadow-sm active:border-b-0 active:translate-y-[6px] relative overflow-hidden flex items-center justify-center text-center leading-tight
+                                                    ${buttonStyle}
+                                                `}
+                                            >
+                                                <div className="flex items-center justify-center relative z-10 w-full">
+                                                    <span className="break-words w-full drop-shadow-sm">{option}</span>
+                                                    {selectedOption && option === currentQ.correct && (
+                                                        <CheckCircle className="ml-2 w-7 h-7 min-w-[28px] text-green-600 absolute right-2 drop-shadow-sm" />
+                                                    )}
+                                                    {selectedOption === option && option !== currentQ.correct && (
+                                                        <XCircle className="ml-2 w-7 h-7 min-w-[28px] text-rose-500 absolute right-2 drop-shadow-sm" />
+                                                    )}
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer / 页脚 */}
+                    <footer className="w-full text-center py-4 text-sky-600 font-medium text-sm md:text-base drop-shadow-sm">
+                        © 2026 Dilfuza Kāng lǎo shī (telegram@diffila)
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
