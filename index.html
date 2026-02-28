@@ -243,7 +243,8 @@
 
         // 生成题目
         const generateQuestionSet = (fullData) => {
-            const shuffledData = shuffleArray([...fullData]);
+            // 将全部数据打乱后，只截取前 20 个作为一组测试题
+            const shuffledData = shuffleArray([...fullData]).slice(0, 20);
             
             return shuffledData.map((item) => {
                 const sameCategoryItems = fullData.filter(d => 
@@ -288,10 +289,17 @@
             const [gameData, setGameData] = useState([]);
             const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
             const [score, setScore] = useState(0);
-            const [timeLeft, setTimeLeft] = useState(60);
+            const [timeLeft, setTimeLeft] = useState(120);
             const [isGameOver, setIsGameOver] = useState(false);
             const [selectedOption, setSelectedOption] = useState(null);
             const [feedback, setFeedback] = useState(null);
+
+            // 格式化时间显示为 mm:ss
+            const formatTime = (seconds) => {
+                const m = Math.floor(seconds / 60);
+                const s = seconds % 60;
+                return `${m}:${s.toString().padStart(2, '0')}`;
+            };
 
             // 语音播放
             const playAudio = (text) => {
@@ -326,7 +334,7 @@
                 setGameData(newQuestions);
                 setCurrentQuestionIndex(0);
                 setScore(0);
-                setTimeLeft(60);
+                setTimeLeft(120);
                 setIsGameOver(false);
                 setSelectedOption(null);
                 setFeedback(null);
@@ -406,7 +414,7 @@
                                 {/* LEFT PANEL */}
                                 <div className="flex-1 flex flex-col items-center justify-center space-y-6 md:space-y-8 p-4">
                                     <div className={`flex items-center space-x-2 px-6 py-3 rounded-full text-white font-black text-2xl shadow-lg transition-colors ${timeLeft < 10 ? 'bg-red-500 animate-bounce' : 'bg-green-400'}`}>
-                                        <span className="text-3xl drop-shadow-sm">{timeLeft}</span>
+                                        <span className="text-3xl drop-shadow-sm font-mono tracking-wider">{formatTime(timeLeft)}</span>
                                         <Timer className="w-7 h-7" />
                                     </div>
 
